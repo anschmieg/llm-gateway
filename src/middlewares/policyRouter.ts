@@ -74,16 +74,59 @@ export async function initializePolicyRouter(c: Context): Promise<void> {
 
 /**
  * PolicyRouter middleware function
- * Applies when x-use-policy-router header is present
+ * Always active - validates authentication and routes intelligently
  */
 export async function policyRouter(c: Context, next: Next): Promise<void> {
-  // Check if PolicyRouter should be used
-  const usePolicyRouter =
-    c.req.header('x-use-policy-router') === 'true' ||
-    c.req.header('x-portkey-policy-router') === 'true';
+  // Get the request path to determine if this is an endpoint we should handle
+  const path = c.req.path;
+  const shouldHandleEndpoint =
+    path === '/v1/chat/completions' ||
+    path === '/v1/completions' ||
+    path === '/v1/embeddings';
 
-  if (!usePolicyRouter) {
+  if (!shouldHandleEndpoint) {
     return next();
+  }
+
+  // Verify authentication - check bearer token against GATEWAY_SECRET
+  const authHeader = c.req.header('Authorization');
+  const gatewaySecret = c.env?.GATEWAY_SECRET || process.env.GATEWAY_SECRET;
+
+  if (!gatewaySecret) {
+    // No secret configured - allow through (for backwards compatibility)
+    console.warn('GATEWAY_SECRET not configured - skipping authentication');
+  } else {
+    // Verify bearer token
+    if (!authHeader) {
+      return c.json(
+        {
+          error: {
+            message:
+              'Authentication required. Please provide a valid bearer token.',
+            type: 'invalid_request_error',
+            param: null,
+            code: 'authentication_required',
+          },
+        },
+        401
+      );
+    }
+
+    // Extract token from "Bearer <token>" format
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    if (token !== gatewaySecret) {
+      return c.json(
+        {
+          error: {
+            message: 'Invalid authentication credentials.',
+            type: 'invalid_request_error',
+            param: null,
+            code: 'invalid_api_key',
+          },
+        },
+        401
+      );
+    }
   }
 
   // Initialize router if not already done
@@ -107,6 +150,25 @@ export async function policyRouter(c: Context, next: Next): Promise<void> {
       return next();
     }
 
+    // Check if model is "specific enough" - if it's one of our supported models, use it directly
+    const requestedModel = requestBody.model;
+    const isSupportedModel =
+      requestedModel &&
+      (requestedModel === 'gpt-4.1' ||
+        requestedModel === 'gpt-4o-mini' ||
+        requestedModel === 'gpt-5-mini' ||
+        requestedModel === 'text-embedding-3-small');
+
+    if (isSupportedModel) {
+      // Model is specific enough - use it directly without routing logic
+      console.log(
+        `PolicyRouter: Using explicitly requested model ${requestedModel}`
+      );
+      // Continue to handler with the model as-is
+      return next();
+    }
+
+    // Model is not specific enough or not provided - apply PolicyRouter logic
     // Get request headers
     const requestHeaders = Object.fromEntries(c.req.raw.headers);
 

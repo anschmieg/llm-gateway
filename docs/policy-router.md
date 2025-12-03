@@ -4,12 +4,18 @@ The PolicyRouter is a native intelligent routing system for the Portkey AI Gatew
 
 ## Overview
 
-PolicyRouter automatically routes requests to the appropriate LLM model based on:
-1. **Explicit model selection** (fastest path)
-2. **Model class specification** (fast path)
-3. **Semantic classification** (intelligent path using embeddings)
+PolicyRouter **automatically routes all requests** to the appropriate LLM model based on:
+1. **Bypass for specific models** - Requests with supported model IDs pass through directly
+2. **Model class specification** (fast path) - Use `x-model-class` header
+3. **Semantic classification** (intelligent path using embeddings) - Auto-select based on prompt
 
 All requests are routed to the Copilot proxy (`https://copilot.s-x.workers.dev/v1`), ensuring OpenAI API compatibility while providing intelligent model selection.
+
+## Key Changes
+
+- **Always Active**: PolicyRouter is now always active for LLM endpoints (no header required to enable)
+- **Authentication Required**: Requests must include `Authorization: Bearer <GATEWAY_SECRET>` header
+- **Smart Bypass**: Automatically bypasses routing for the 4 supported model IDs
 
 ## Supported Models
 
@@ -23,296 +29,88 @@ PolicyRouter supports the following model IDs:
 
 ### Environment Variables
 
-Set the following environment variable or Cloudflare Workers secret:
+Set the following environment variables or Cloudflare Workers secrets:
 
 ```bash
 COPILOT_API_KEY=your-copilot-api-key-here
+GATEWAY_SECRET=your-authentication-secret-here
 ```
 
 For Cloudflare Workers deployment:
 ```bash
 wrangler secret put COPILOT_API_KEY
+wrangler secret put GATEWAY_SECRET
 ```
 
-### Optional KV Storage
+## Authentication
 
-To persist anchor embeddings across deployments, configure a KV namespace:
+**PolicyRouter enforces authentication** when `GATEWAY_SECRET` is configured. All requests must include a valid bearer token:
 
-```toml
-# wrangler.toml
-[[kv_namespaces]]
-binding = "POLICY_ROUTER_KV"
-id = "your-kv-namespace-id"
+```bash
+curl https://your-gateway.com/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_GATEWAY_SECRET" \
+  -d '{"messages": [{"role": "user", "content": "Hello"}]}'
 ```
+
+Returns 401 if:
+- Authorization header is missing
+- Bearer token doesn't match GATEWAY_SECRET
+
+**Note:** If `GATEWAY_SECRET` is not configured, authentication is skipped.
 
 ## Usage
 
-### Enabling PolicyRouter
+### Always Active
 
-Enable PolicyRouter by adding one of these headers to your requests:
+PolicyRouter is **always active** for:
+- `/v1/chat/completions`
+- `/v1/completions`  
+- `/v1/embeddings`
 
-- `x-use-policy-router: true`
-- `x-portkey-policy-router: true`
+### Routing Behavior
 
-### Routing Strategies
-
-#### 1. Explicit Model Selection (Fastest)
-
-Specify the exact model you want to use:
+**1. Bypass for Supported Models**
+If you specify a supported model, it's used directly (no routing):
 
 ```bash
-curl https://your-gateway.com/v1/chat/completions \
+curl -X POST https://your-gateway.com/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_GATEWAY_SECRET" \
   -H "Content-Type: application/json" \
-  -H "x-use-policy-router: true" \
-  -d '{
-    "model": "gpt-4.1",
-    "messages": [{"role": "user", "content": "Hello"}]
-  }'
+  -d '{"model": "gpt-4.1", "messages": [{"role": "user", "content": "Hello"}]}'
 ```
 
-#### 2. Model Class Selection (Fast)
-
-Use the `x-model-class` header to specify a model class:
+**2. Model Class (Fast Path)**
+Use `x-model-class` header:
 
 ```bash
-curl https://your-gateway.com/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "x-use-policy-router: true" \
+curl -X POST https://your-gateway.com/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_GATEWAY_SECRET" \
   -H "x-model-class: fast" \
-  -d '{
-    "messages": [{"role": "user", "content": "What is 2+2?"}]
-  }'
+  -d '{"messages": [{"role": "user", "content": "Quick question"}]}'
 ```
 
-Available model classes:
-- `fast` - Routes to `gpt-5-mini` for simple, quick responses
-- `balanced` - Routes to `gpt-4o-mini` for general-purpose tasks
-- `quality` - Routes to `gpt-4.1` for complex, high-quality responses
-
-#### 3. Semantic Classification (Intelligent)
-
-When neither model nor model class is specified, PolicyRouter uses semantic classification:
+**3. Semantic Classification**
+No model specified → automatic routing:
 
 ```bash
-curl https://your-gateway.com/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "x-use-policy-router: true" \
-  -d '{
-    "messages": [{"role": "user", "content": "Explain quantum mechanics"}]
-  }'
+curl -X POST https://your-gateway.com/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_GATEWAY_SECRET" \
+  -d '{"messages": [{"role": "user", "content": "Complex analysis..."}]}'
 ```
-
-The router will:
-1. Extract the prompt from the request
-2. Analyze prompt characteristics (length, complexity)
-3. Select the appropriate model based on cost/quality/speed trade-offs
-
-## Architecture
-
-### Routing Logic
-
-```
-Request
-  ↓
-Is explicit model specified?
-  ├─ Yes → Use specified model (fast path)
-  └─ No → Is model class specified?
-      ├─ Yes → Use model class mapping (fast path)
-      └─ No → Semantic classification
-          ├─ Get prompt embedding (if available)
-          ├─ Compare with anchor embeddings
-          └─ Select best matching model class
-```
-
-### Semantic Classification
-
-When embeddings are available, PolicyRouter:
-1. Calls the Copilot proxy to get an embedding for the prompt
-2. Compares the embedding with pre-computed anchor embeddings
-3. Selects the model class with the highest cosine similarity
-
-When embeddings are unavailable (fallback), it uses heuristics based on:
-- Prompt length
-- Word count
-- Complexity indicators
-
-### Anchor Embeddings
-
-Anchor embeddings are pre-computed representative prompts for each model class:
-
-- **Fast anchors**: Simple, direct questions
-- **Balanced anchors**: Moderate complexity queries
-- **Quality anchors**: Complex analytical requests
-
-Anchors are initialized at startup and can be stored in KV storage for persistence.
-
-## Integration with OpenAI API
-
-PolicyRouter is fully compatible with the OpenAI API standard and supports:
-
-- `/v1/chat/completions` - Chat completion requests
-- `/v1/completions` - Text completion requests  
-- `/v1/embeddings` - Embedding generation requests
-
-All responses follow the OpenAI API format, including:
-- Standard response structures
-- Error formats
-- Streaming support
-- Token counting
-
-## Examples
-
-### Python with OpenAI SDK
-
-```python
-from openai import OpenAI
-
-client = OpenAI(
-    base_url="https://your-gateway.com/v1",
-    api_key="your-api-key"
-)
-
-# Automatic routing based on prompt complexity
-response = client.chat.completions.create(
-    model="gpt-4o-mini",  # Will be overridden by PolicyRouter
-    messages=[
-        {"role": "user", "content": "Explain quantum computing in detail"}
-    ],
-    extra_headers={
-        "x-use-policy-router": "true"
-    }
-)
-```
-
-### JavaScript/TypeScript
-
-```typescript
-import OpenAI from 'openai';
-
-const client = new OpenAI({
-  baseURL: 'https://your-gateway.com/v1',
-  apiKey: 'your-api-key'
-});
-
-// Use explicit model class
-const response = await client.chat.completions.create({
-  messages: [
-    { role: 'user', content: 'Quick question: what time is it?' }
-  ],
-  extra_headers: {
-    'x-use-policy-router': 'true',
-    'x-model-class': 'fast'
-  }
-});
-```
-
-### cURL
-
-```bash
-# Automatic semantic routing
-curl https://your-gateway.com/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer your-api-key" \
-  -H "x-use-policy-router: true" \
-  -d '{
-    "messages": [
-      {
-        "role": "user",
-        "content": "Provide a comprehensive analysis of climate change impacts"
-      }
-    ]
-  }'
-```
-
-## Performance
-
-- **Fast path (explicit model)**: < 1ms routing overhead
-- **Fast path (model class)**: < 1ms routing overhead
-- **Semantic path (with embeddings)**: ~50-100ms (includes embedding API call)
-- **Semantic path (heuristics)**: < 1ms
-
-## Error Handling
-
-PolicyRouter gracefully handles errors:
-
-- If initialization fails, requests pass through normally
-- If semantic classification fails, falls back to heuristic classification
-- If heuristic classification fails, defaults to balanced model
-- All errors are logged but don't block request processing
 
 ## Testing
 
-Run PolicyRouter tests:
-
+Run tests:
 ```bash
 npm run test:gateway tests/policyRouter/
 ```
 
-Test coverage includes:
-- Explicit model routing
-- Model class routing
-- Semantic classification
-- Heuristic fallback
-- Edge cases and error handling
-- Integration with middleware
-- Storage operations
-
-## Limitations
-
-1. **Model Support**: Only the four specified Copilot models are supported
-2. **Proxy**: Only routes to the Copilot proxy endpoint
-3. **Embedding Model**: Uses `text-embedding-3-small` for semantic classification
-4. **Network Dependency**: Semantic classification requires external API call
-
 ## Security
 
-- API keys are stored securely in Cloudflare Workers secrets
-- No sensitive data is logged
+- Bearer token authentication required (when `GATEWAY_SECRET` configured)
+- Returns OpenAI-compatible 401 errors
 - All requests use HTTPS
-- Compatible with existing gateway security features
+- Secrets stored in Cloudflare Workers
 
-## Future Enhancements
-
-Potential improvements:
-- Custom anchor embeddings via API
-- Dynamic anchor updates based on usage patterns
-- Cost tracking per model class
-- Advanced classification models
-- Multi-provider support
-- A/B testing capabilities
-
-## Troubleshooting
-
-### PolicyRouter not activating
-
-Ensure you're including the required header:
-```bash
--H "x-use-policy-router: true"
-```
-
-### API key not found
-
-Set the COPILOT_API_KEY environment variable or Cloudflare Workers secret.
-
-### Semantic classification falling back to heuristics
-
-This is normal when:
-- Embeddings haven't been initialized yet
-- Network issues prevent embedding API call
-- API key is invalid
-
-The router will still function using heuristic classification.
-
-## Contributing
-
-To add new features to PolicyRouter:
-
-1. Update code in `src/services/policyRouter/`
-2. Add middleware changes in `src/middlewares/policyRouter.ts`
-3. Write comprehensive tests in `tests/policyRouter/`
-4. Update this documentation
-5. Submit a pull request
-
-## License
-
-PolicyRouter is part of the Portkey AI Gateway and follows the same MIT license.
+For more details, see the full PolicyRouter implementation.
