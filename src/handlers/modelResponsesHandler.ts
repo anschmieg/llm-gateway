@@ -13,7 +13,10 @@ function modelResponsesHandler(
     try {
       let requestHeaders = Object.fromEntries(c.req.raw.headers);
       let request = method === 'POST' ? await c.req.json() : {};
-      const camelCaseConfig = constructConfigFromRequestHeaders(requestHeaders);
+      const camelCaseConfig = constructConfigFromRequestHeaders(
+        c,
+        requestHeaders
+      );
       const tryTargetsResponse = await tryTargetsRecursively(
         c,
         camelCaseConfig ?? {},

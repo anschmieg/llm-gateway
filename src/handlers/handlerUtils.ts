@@ -27,6 +27,7 @@ import { ConditionalRouter } from '../services/conditionalRouter';
 import { RouterError } from '../errors/RouterError';
 import { GatewayError } from '../errors/GatewayError';
 import { HookType } from '../middlewares/hooks/types';
+import { getProviderApiKey } from '../utils/providerApiKey';
 
 // Services
 import { CacheResponseObject, CacheService } from './services/cacheService';
@@ -832,6 +833,7 @@ export async function tryTargetsRecursively(
 }
 
 export function constructConfigFromRequestHeaders(
+  c: Context,
   requestHeaders: Record<string, any>
 ): Options | Targets {
   const azureConfig = {
@@ -1112,36 +1114,31 @@ export function constructConfigFromRequestHeaders(
     ]) as any;
   }
 
+  const provider = requestHeaders[`x-${POWERED_BY}-provider`];
+  const authApiKey = requestHeaders['authorization']?.replace('Bearer ', '');
+
+  // Get API key from environment variables, fallback to authorization header
+  const apiKey = getProviderApiKey(c, provider, authApiKey);
+
   return {
-    provider: requestHeaders[`x-${POWERED_BY}-provider`],
-    apiKey: requestHeaders['authorization']?.replace('Bearer ', ''),
+    provider,
+    apiKey,
     defaultInputGuardrails: defaultsConfig.input_guardrails,
     defaultOutputGuardrails: defaultsConfig.output_guardrails,
-    ...(requestHeaders[`x-${POWERED_BY}-provider`] === AZURE_OPEN_AI &&
-      azureConfig),
-    ...([BEDROCK, SAGEMAKER].includes(
-      requestHeaders[`x-${POWERED_BY}-provider`]
-    ) && awsConfig),
-    ...(requestHeaders[`x-${POWERED_BY}-provider`] === SAGEMAKER &&
-      sagemakerConfig),
-    ...(requestHeaders[`x-${POWERED_BY}-provider`] === WORKERS_AI &&
-      workersAiConfig),
-    ...(requestHeaders[`x-${POWERED_BY}-provider`] === GOOGLE_VERTEX_AI &&
-      vertexConfig),
-    ...(requestHeaders[`x-${POWERED_BY}-provider`] === AZURE_AI_INFERENCE &&
-      azureAiInferenceConfig),
-    ...(requestHeaders[`x-${POWERED_BY}-provider`] === OPEN_AI && openAiConfig),
-    ...(requestHeaders[`x-${POWERED_BY}-provider`] === ANTHROPIC &&
-      anthropicConfig),
-    ...(requestHeaders[`x-${POWERED_BY}-provider`] === HUGGING_FACE &&
-      huggingfaceConfig),
+    ...(provider === AZURE_OPEN_AI && azureConfig),
+    ...([BEDROCK, SAGEMAKER].includes(provider) && awsConfig),
+    ...(provider === SAGEMAKER && sagemakerConfig),
+    ...(provider === WORKERS_AI && workersAiConfig),
+    ...(provider === GOOGLE_VERTEX_AI && vertexConfig),
+    ...(provider === AZURE_AI_INFERENCE && azureAiInferenceConfig),
+    ...(provider === OPEN_AI && openAiConfig),
+    ...(provider === ANTHROPIC && anthropicConfig),
+    ...(provider === HUGGING_FACE && huggingfaceConfig),
     mistralFimCompletion:
       requestHeaders[`x-${POWERED_BY}-mistral-fim-completion`],
-    ...(requestHeaders[`x-${POWERED_BY}-provider`] === STABILITY_AI &&
-      stabilityAiConfig),
-    ...(requestHeaders[`x-${POWERED_BY}-provider`] === FIREWORKS_AI &&
-      fireworksConfig),
-    ...(requestHeaders[`x-${POWERED_BY}-provider`] === CORTEX && cortexConfig),
+    ...(provider === STABILITY_AI && stabilityAiConfig),
+    ...(provider === FIREWORKS_AI && fireworksConfig),
+    ...(provider === CORTEX && cortexConfig),
   };
 }
 

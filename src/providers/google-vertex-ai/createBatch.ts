@@ -1,4 +1,3 @@
-import { constructConfigFromRequestHeaders } from '../../handlers/handlerUtils';
 import { transformUsingProviderConfig } from '../../services/transformToProviderRequest';
 import { Options } from '../../types/requestBody';
 import { ProviderConfig } from '../types';
@@ -74,10 +73,9 @@ export const GoogleBatchCreateConfig: ProviderConfig = {
 
 export const GoogleBatchCreateRequestTransform = (
   requestBody: any,
-  requestHeaders: Record<string, string>
+  requestHeaders: Record<string, string>,
+  providerOptions: Options
 ) => {
-  const providerOptions = constructConfigFromRequestHeaders(requestHeaders);
-
   const baseConfig = transformUsingProviderConfig(
     GoogleBatchCreateConfig,
     requestBody,

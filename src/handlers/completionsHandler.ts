@@ -17,7 +17,10 @@ export async function completionsHandler(c: Context): Promise<Response> {
   try {
     let request = await c.req.json();
     let requestHeaders = Object.fromEntries(c.req.raw.headers);
-    const camelCaseConfig = constructConfigFromRequestHeaders(requestHeaders);
+    const camelCaseConfig = constructConfigFromRequestHeaders(
+      c,
+      requestHeaders
+    );
 
     const tryTargetsResponse = await tryTargetsRecursively(
       c,

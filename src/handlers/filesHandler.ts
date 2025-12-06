@@ -12,7 +12,10 @@ function filesHandler(
   async function handler(c: Context): Promise<Response> {
     try {
       const requestHeaders = Object.fromEntries(c.req.raw.headers);
-      const camelCaseConfig = constructConfigFromRequestHeaders(requestHeaders);
+      const camelCaseConfig = constructConfigFromRequestHeaders(
+        c,
+        requestHeaders
+      );
       let body = {};
       if (c.req.raw.body instanceof ReadableStream) {
         body = c.req.raw.body;
