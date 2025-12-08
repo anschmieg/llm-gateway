@@ -63,8 +63,8 @@ export const DEFAULT_ANCHORS: AnchorEmbedding[] = [
  * Model class to model ID mapping
  */
 export const MODEL_CLASS_MAPPING: Record<ModelClass, SupportedModel> = {
-  [ModelClass.FAST]: 'gpt-5-mini',
-  [ModelClass.BALANCED]: 'gpt-4o-mini',
+  [ModelClass.FAST]: 'gpt-4o',
+  [ModelClass.BALANCED]: 'gpt-5-mini',
   [ModelClass.QUALITY]: 'gpt-4.1',
 };
 
@@ -247,9 +247,10 @@ export class PolicyRouter {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${this.copilotApiKey}`,
       },
+      // Copilot proxy expects input as an array of strings for embeddings
       body: JSON.stringify({
         model: EMBEDDING_MODEL,
-        input: text,
+        input: [text],
       }),
     });
 

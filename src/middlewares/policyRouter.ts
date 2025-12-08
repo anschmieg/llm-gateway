@@ -182,10 +182,14 @@ export async function policyRouter(c: Context, next: Next): Promise<void> {
     c.set('policyRouterEnabled', true);
     c.set('policyRouterDecision', routingDecision);
 
-    // Set provider config headers
-    c.req.raw.headers.set('x-portkey-provider', routingDecision.provider);
-    c.req.raw.headers.set('x-portkey-api-key', routingDecision.apiKey);
-    c.req.raw.headers.set('x-portkey-custom-host', COPILOT_PROXY_URL);
+    // Store routing decision in context so handlers can pick it up without mutating immutable headers
+    c.set('policyRouterEnabled', true);
+    c.set('policyRouterDecision', {
+      provider: routingDecision.provider,
+      apiKey: routingDecision.apiKey,
+      customHost: COPILOT_PROXY_URL,
+      model: routingDecision.model,
+    });
 
     // Update model in request body
     requestBody.model = routingDecision.model;
