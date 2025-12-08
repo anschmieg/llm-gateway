@@ -37,7 +37,10 @@ async function finetuneHandler(c: Context) {
     const request = BODY_SUPPORTED_ENDPOINTS.includes(endpoint)
       ? await c.req.json()
       : {};
-    const camelCaseConfig = constructConfigFromRequestHeaders(requestHeaders);
+    const camelCaseConfig = constructConfigFromRequestHeaders(
+      c,
+      requestHeaders
+    );
     const tryTargetsResponse = await tryTargetsRecursively(
       c,
       camelCaseConfig ?? {},

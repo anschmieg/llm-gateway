@@ -32,6 +32,7 @@ export async function realTimeHandler(c: Context): Promise<Response> {
     const requestHeaders = Object.fromEntries(c.req.raw.headers);
 
     const providerOptions = constructConfigFromRequestHeaders(
+      c,
       requestHeaders
     ) as Options;
     const provider = providerOptions.provider ?? '';

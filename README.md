@@ -204,6 +204,7 @@ Insights from analyzing 2 trillion+ tokens, across 90+ regions and 650+ teams in
 - <a href="https://portkey.wiki/gh-40">**Request Timeouts**</a>: Manage unruly LLMs & latencies by setting up granular request timeouts, allowing automatic termination of requests that exceed a specified duration.
 - <a href="https://portkey.wiki/gh-41">**Multi-modal LLM Gateway**</a>: Call vision, audio (text-to-speech & speech-to-text), and image generation models from multiple providers  — all using the familiar OpenAI signature
 - <a href="https://portkey.wiki/gh-42">**Realtime APIs**</a>: Call realtime APIs launched by OpenAI through the integrate websockets server.
+- [**PolicyRouter**](./docs/policy-router.md): Native intelligent routing system for Cloudflare Workers that uses semantic classification to automatically select the optimal model based on request complexity.
 
 ### Security & Accuracy
 - <a href="https://portkey.wiki/gh-88">**Guardrails**</a>: Verify your LLM inputs and outputs to adhere to your specified checks. Choose from the 40+ pre-built guardrails to ensure compliance with security and accuracy standards. You can <a href="https://portkey.wiki/gh-43">bring your own guardrails</a> or choose from our <a href="https://portkey.wiki/gh-44">many partners</a>.

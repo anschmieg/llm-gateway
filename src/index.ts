@@ -15,6 +15,7 @@ import { getRuntimeKey } from 'hono/adapter';
 import { requestValidator } from './middlewares/requestValidator';
 import { hooks } from './middlewares/hooks';
 import { memoryCache } from './middlewares/cache';
+import { policyRouter } from './middlewares/policyRouter';
 
 // Handlers
 import { proxyHandler } from './handlers/proxyHandler';
@@ -104,6 +105,9 @@ app.get('/v1/models', modelsHandler);
 
 // Use hooks middleware for all routes
 app.use('*', hooks);
+
+// Use PolicyRouter middleware for all routes (when enabled via header)
+app.use('*', policyRouter);
 
 if (conf.cache === true) {
   app.use('*', memoryCache());

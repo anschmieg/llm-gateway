@@ -13,7 +13,10 @@ export async function realTimeHandlerNode(
   try {
     let incomingWebsocket: WSContext<unknown> | null = null;
     const requestHeaders = Object.fromEntries(c.req.raw.headers);
-    const camelCaseConfig = constructConfigFromRequestHeaders(requestHeaders);
+    const camelCaseConfig = constructConfigFromRequestHeaders(
+      c,
+      requestHeaders
+    );
 
     const provider = camelCaseConfig?.provider ?? '';
     const apiConfig: ProviderAPIConfig = Providers[provider].api;

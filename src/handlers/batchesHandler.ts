@@ -10,7 +10,10 @@ function batchesHandler(endpoint: endpointStrings, method: 'POST' | 'GET') {
     try {
       let requestHeaders = Object.fromEntries(c.req.raw.headers);
       let request = endpoint === 'createBatch' ? await c.req.json() : {};
-      const camelCaseConfig = constructConfigFromRequestHeaders(requestHeaders);
+      const camelCaseConfig = constructConfigFromRequestHeaders(
+        c,
+        requestHeaders
+      );
       const tryTargetsResponse = await tryTargetsRecursively(
         c,
         camelCaseConfig ?? {},
