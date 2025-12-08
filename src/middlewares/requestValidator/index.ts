@@ -108,20 +108,25 @@ export const requestValidator = (c: Context, next: any) => {
   // Allow missing x-portkey headers when the request will be handled by the internal PolicyRouter (gateway routing)
   // Allow if the Authorization header is the gateway secret
   const authHeader = requestHeaders['authorization'];
-  const gatewaySecret = Environment(c)?.GATEWAY_SECRET || process.env.GATEWAY_SECRET;
-  const isGatewayAuth = authHeader && gatewaySecret && authHeader.replace(/^Bearer\s+/i, '') === gatewaySecret;
+  const gatewaySecret =
+    Environment(c)?.GATEWAY_SECRET || process.env.GATEWAY_SECRET;
+  const isGatewayAuth =
+    authHeader &&
+    gatewaySecret &&
+    authHeader.replace(/^Bearer\s+/i, '') === gatewaySecret;
 
-  const shouldAllowMissingPortkeyHeaders = isGatewayAuth && [
-    '/v1/chat/completions',
-    '/v1/completions',
-    '/v1/embeddings',
-  ].includes(c.req.path);
+  const shouldAllowMissingPortkeyHeaders =
+    isGatewayAuth &&
+    ['/v1/chat/completions', '/v1/completions', '/v1/embeddings'].includes(
+      c.req.path
+    );
 
   if (
     !(
       requestHeaders[`x-${POWERED_BY}-config`] ||
       requestHeaders[`x-${POWERED_BY}-provider`]
-    ) && !shouldAllowMissingPortkeyHeaders
+    ) &&
+    !shouldAllowMissingPortkeyHeaders
   ) {
     return new Response(
       JSON.stringify({

@@ -1,13 +1,13 @@
 #!/usr/bin/env tsx
 /**
  * Pre-compute anchor embeddings for PolicyRouter
- * 
+ *
  * This script generates embeddings for anchor texts used in semantic routing.
  * Run once to generate embeddings, which are then committed to the repo.
- * 
+ *
  * Usage:
  *   npm run precompute-anchors
- * 
+ *
  * Requirements:
  *   - COPILOT_API_KEY environment variable must be set
  */
@@ -78,7 +78,7 @@ async function getEmbedding(text: string, apiKey: string): Promise<number[]> {
 
 async function precomputeAnchors() {
   const apiKey = process.env.COPILOT_API_KEY;
-  
+
   if (!apiKey) {
     console.error('❌ Error: COPILOT_API_KEY environment variable is required');
     console.error('\nSet it in your shell or .env file:');
@@ -111,7 +111,7 @@ async function precomputeAnchors() {
     __dirname,
     '../src/services/policyRouter/precomputedAnchors.ts'
   );
-  
+
   const tsContent = `/**
  * Pre-computed anchor embeddings for PolicyRouter
  * 
@@ -124,11 +124,18 @@ async function precomputeAnchors() {
 
 import { AnchorEmbedding, ModelClass } from './index';
 
-export const PRECOMPUTED_ANCHORS: AnchorEmbedding[] = ${JSON.stringify(anchors, null, 2).replace(/"fast"/g, 'ModelClass.FAST').replace(/"balanced"/g, 'ModelClass.BALANCED').replace(/"quality"/g, 'ModelClass.QUALITY')};
+export const PRECOMPUTED_ANCHORS: AnchorEmbedding[] = ${JSON.stringify(
+    anchors,
+    null,
+    2
+  )
+    .replace(/"fast"/g, 'ModelClass.FAST')
+    .replace(/"balanced"/g, 'ModelClass.BALANCED')
+    .replace(/"quality"/g, 'ModelClass.QUALITY')};
 `;
 
   fs.writeFileSync(outputPath, tsContent);
-  
+
   console.log('✅ Pre-computed anchors saved to:');
   console.log(`   ${outputPath}\n`);
   console.log(`📊 Summary:`);

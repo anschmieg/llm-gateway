@@ -304,7 +304,9 @@ export async function tryPost(
   );
   const hooksService = new HooksService(requestContext);
   // If PolicyRouter set a provider, inject it into requestContext.provider before creating ProviderContext
-  const policyDecision = c.get?.('policyRouterDecision') || (c && c.get && c.get('policyRouterDecision'));
+  const policyDecision =
+    c.get?.('policyRouterDecision') ||
+    (c && c.get && c.get('policyRouterDecision'));
   if (policyDecision && policyDecision.provider) {
     // Don't mutate readonly properties; set provider override on providerOption
     requestContext.providerOption = {
@@ -314,7 +316,8 @@ export async function tryPost(
         ...(requestContext.providerOption.overrideParams || {}),
         policyRouterApiKey: policyDecision.apiKey,
       },
-      customHost: requestContext.providerOption.customHost || policyDecision.customHost,
+      customHost:
+        requestContext.providerOption.customHost || policyDecision.customHost,
     } as any;
   }
 
@@ -1130,9 +1133,14 @@ export function constructConfigFromRequestHeaders(
   }
 
   // If PolicyRouter has a decision, prefer it
-  const policyDecision = c.get?.('policyRouterDecision') || (c && c.get && c.get('policyRouterDecision'));
-  const provider = policyDecision?.provider || requestHeaders[`x-${POWERED_BY}-provider`];
-  const authApiKey = policyDecision?.apiKey || requestHeaders['authorization']?.replace('Bearer ', '');
+  const policyDecision =
+    c.get?.('policyRouterDecision') ||
+    (c && c.get && c.get('policyRouterDecision'));
+  const provider =
+    policyDecision?.provider || requestHeaders[`x-${POWERED_BY}-provider`];
+  const authApiKey =
+    policyDecision?.apiKey ||
+    requestHeaders['authorization']?.replace('Bearer ', '');
 
   // Get API key from environment variables, fallback to authorization header
   const apiKey = getProviderApiKey(c, provider, authApiKey);

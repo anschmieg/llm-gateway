@@ -18,7 +18,10 @@ export async function messagesCountTokensHandler(
 ): Promise<Response> {
   try {
     // Prefer PolicyRouter-provided request body when available
-    let request = c.get && c.get('policyRouterRequestBody') ? c.get('policyRouterRequestBody') : await c.req.json();
+    let request =
+      c.get && c.get('policyRouterRequestBody')
+        ? c.get('policyRouterRequestBody')
+        : await c.req.json();
     let requestHeaders = Object.fromEntries(c.req.raw.headers);
     const camelCaseConfig = constructConfigFromRequestHeaders(
       c,

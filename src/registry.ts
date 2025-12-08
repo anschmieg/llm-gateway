@@ -34,6 +34,14 @@ export const providers: ProviderConfig[] = [
     type: 'openai',
     // Copilot lists tons of weird snapshots. Let's keep it clean.
     whitelist: ['gpt-*', 'oswe-*', 'code*', 'grok-*'],
-    blacklist: ['o*', 'claude*', '*{\d\d\d*}', 'gemini*', 'gpt-5', 'gpt-5.1-*', ''], // exclude snapshots, at least 4 digits trailing
+    blacklist: [
+      'o*',
+      'claude*',
+      '*{ddd*}',
+      'gemini*',
+      'gpt-5',
+      'gpt-5.1-*',
+      '',
+    ], // exclude snapshots, at least 4 digits trailing
   },
 ] as const;
