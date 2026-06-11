@@ -12,6 +12,24 @@ import {
 } from '../utils';
 import { transformReasoningParams, transformUsageOptions } from './utils';
 
+const validRoles = [
+  'user',
+  'assistant',
+  'system',
+  'developer',
+  'function',
+  'tool',
+];
+
+function transformMessagesForOpenRouter(messages: any[]): any[] {
+  return messages
+    .filter((msg) => msg && msg.role && validRoles.includes(msg.role))
+    .map((msg) => {
+      if (msg.role === 'developer') return { ...msg, role: 'system' };
+      return msg;
+    });
+}
+
 export const OpenrouterChatCompleteConfig: ProviderConfig = {
   model: {
     param: 'model',
@@ -22,10 +40,7 @@ export const OpenrouterChatCompleteConfig: ProviderConfig = {
     param: 'messages',
     default: '',
     transform: (params: Params) => {
-      return params.messages?.map((message) => {
-        if (message.role === 'developer') return { ...message, role: 'system' };
-        return message;
-      });
+      return transformMessagesForOpenRouter(params.messages || []);
     },
   },
   max_tokens: {

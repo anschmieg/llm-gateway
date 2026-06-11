@@ -1,0 +1,20 @@
+
+# 2025-12-08 19:35:45.445880
++You are a shell command generator. The user wants to run a command on their Unix terminal.
++
++Convert this request to a single executable shell command. Output ONLY the raw command, nothing else - no explanation, no markdown, no code blocks.
++
++User request: Explain this shell command concisely (what it does, any risks): ls
+
+# 2025-12-08 19:35:45.446059
++You are a shell command generator. The user wants to run a command on their Unix terminal.
++
++Convert this request to a single executable shell command. Output ONLY the raw command, nothing else - no explanation, no markdown, no code blocks.
++
++User request: Explain this shell command concisely (what it does, any risks): ls
+
+# 2025-12-08 19:46:45.390310
++Explain this shell command in 1-2 sentences (what it does, any risks): ls -la
+
+# 2025-12-08 19:46:45.390527
++Explain this shell command in 1-2 sentences (what it does, any risks): ls -la
